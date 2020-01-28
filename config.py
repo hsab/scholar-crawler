@@ -9,5 +9,3 @@ clusterURL = "https://scholar.google.com/scholar?cluster={}&hl=en&as_sdt=2005&sc
 
 # gs_id
 realtedURL = "https://scholar.google.com/scholar?q=related:{}:scholar.google.com/&scioq=&hl=en&as_sdt=2005&sciodt=0,5"
-
-startURL = "https://scholar.google.com/scholar?start=0&hl=en&as_sdt=2005&sciodt=0,5&cites=1205816983952660486&scipsc="
