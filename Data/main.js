@@ -1,13 +1,13 @@
 var template = Handlebars.compile(`
 <div class="card">
-	<a class="link" href="{{link}}">
+	<a target="_blank" class="link" href="{{link}}">
 		<h2 class="title">{{title}}</h2>
 		<span class="info">{{info}}</span>
 	</a>
 	<div class="desc">{{desc}}</div>
 	<div class="scholar">
-		<a href="https://scholar.google.com/scholar?cites={{cited_by_link}}&as_sdt=2005&sciodt=0,5&hl=en" class="sc_citing">Cited by {{cited_by}}</a>
-		<a href="https://scholar.google.com/scholar?q=related:{{related_link}}:scholar.google.com/&scioq=&hl=en&as_sdt=2005&sciodt=0,5" class="related">Related</a>
+		<a target="_blank" href="https://scholar.google.com/scholar?cites={{cited_by_link}}&as_sdt=2005&sciodt=0,5&hl=en" class="sc_citing">Cited by {{cited_by}}</a>
+		<a target="_blank" href="https://scholar.google.com/scholar?q=related:{{related_link}}:scholar.google.com/&scioq=&hl=en&as_sdt=2005&sciodt=0,5" class="related">Related</a>
 	</div>
 </div>
 `);
