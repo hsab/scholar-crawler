@@ -1,5 +1,16 @@
-// var width = 960,
-// 	height = 850,
+var template = Handlebars.compile(`
+<div class="card">
+	<a class="link" href="{{link}}">
+		<h2 class="title">{{title}}</h2>
+		<span class="info">{{info}}</span>
+	</a>
+	<div class="desc">{{desc}}</div>
+	<div class="scholar">
+		<a href="https://scholar.google.com/scholar?cites={{cited_by_link}}&as_sdt=2005&sciodt=0,5&hl=en" class="sc_citing">Cited by {{cited_by}}</a>
+		<a href="https://scholar.google.com/scholar?q=related:{{related_link}}:scholar.google.com/&scioq=&hl=en&as_sdt=2005&sciodt=0,5" class="related">Related</a>
+	</div>
+</div>
+`);
 
 
 var margin = {
@@ -16,7 +27,7 @@ var margin = {
 	minorAngle = 1 * Math.PI;
 
 var angle = d3.scaleLinear()
-	.range([0, 2 * Math.PI - 0.2]);
+	.range([0, 2 * Math.PI - 0.1]);
 // .domain(["source", "source-target", "target-source", "target"])
 
 var radius = d3.scaleLinear()
@@ -133,8 +144,7 @@ d3.json("dbClean.json", function (graph) {
 	});
 
 	// Initialize the info display.
-	var info = d3.select("#info")
-		.text(defaultInfo = "Showing " + formatNumber(links.length) + " dependencies among " + formatNumber(nodes.length) + " classes.");
+	var info = d3.select("#details");
 
 	// Normally, Hive Plots sort nodes by degree along each axis. However, since
 	// this example visualizes a package hierarchy, we get more interesting
@@ -199,7 +209,7 @@ d3.json("dbClean.json", function (graph) {
 				return angle(d.node.packageName);
 			})
 			.radius(function (d) {
-				return radius(d.node.index * 4) * 2;
+				return radius(d.node.index * 2) * 2;
 			}))
 		.on("mouseover", linkMouseover)
 		.on("mouseout", mouseout);
@@ -221,7 +231,7 @@ d3.json("dbClean.json", function (graph) {
 
 		})
 		.attr("cx", function (d) {
-			return radius(d.index * 4) * 2;
+			return radius(d.index * 2) * 2;
 		})
 		.attr("r", function (d) {
 			// return 4;
@@ -231,24 +241,6 @@ d3.json("dbClean.json", function (graph) {
 		// .on("mouseout", mouseout)
 		.on("click", nodeMouseClick)
 
-	// Highlight the link and connected nodes on mouseover.
-	function linkMouseover(d) {
-		svg.selectAll(".link").classed("active", function (p) {
-			return p === d;
-		});
-		svg.selectAll(".node").classed("active", function (p) {
-			return p === d.source.node || p === d.target.node;
-		});
-		info.text(d.source.node.title + " → " + d.target.node.title);
-	}
-
-	svg.on("click", function () {
-		console.log("hellalsdlasdl");
-
-		d3.select(this).classed("active", false);
-		d3.select(this).classed("hide", false);
-	})
-
 
 	function isLinked(p, d) {
 		return p.source.node === d || p.target.node === d;
@@ -257,62 +249,100 @@ d3.json("dbClean.json", function (graph) {
 	function isInRelated(p, d) {
 		return (p.gs_id in d.related) || (d.gs_id in p.related);
 	}
+
+	function generateCard(d) {
+		inf = ""
+		Array.from(d.info).forEach(function (item, index) {
+			sufix = index != d.info.length - 1 ? " - " : "";
+			inf += `${item} ${sufix}`
+		})
+
+		temp = template({
+			link: d.link,
+			title: d.title,
+			desc: d.description,
+			info: inf,
+			cited_by: d.citation_count,
+			cited_by_link: d.cite_url,
+			related_link: d.gs_id
+		})
+
+		return temp;
+	}
+
+
+	// Highlight the link and connected nodes on mouseover.
+	function linkMouseover(d) {
+		svg.selectAll(".link").classed("hover", function (p) {
+			return p === d;
+		});
+		svg.selectAll(".node").classed("hover", function (p) {
+			return p === d.source.node || p === d.target.node;
+		});
+		// info.text(d.source.node.title + " → " + d.target.node.title);
+		info.html(generateCard(d.source.node) + generateCard(d.target.node));
+	}
+
 	// Highlight the node and connected links on mouseover.
 	function nodeMouseover(d) {
-		svg.selectAll(".link").classed("active", function (p) {
+		svg.selectAll(".link").classed("hover", function (p) {
 			return isLinked(p, d);
 		});
 
-		svg.selectAll(".node").classed("active", function (p) {
+		svg.selectAll(".node").classed("hover", function (p) {
 			return isInRelated(p, d);
 		});
 
-		d3.select(this).classed("active", true);
+		d3.select(this).classed("hover", true);
 		d3.select(this).classed("hide", false);
 
-		info.text(d.title);
+		info.html(generateCard(d));
 	}
 
 	function nodeMouseClick(d) {
+		accumHTML = ""
 		if (d3.select(this).classed("active")) {
 			svg.selectAll(".active").classed("active", false);
 			svg.selectAll(".hide").classed("hide", false);
 
 		} else {
 			svg.selectAll(".link").classed("active", function (p) {
-				return isLinked(p, d);
+				flag = isLinked(p, d);
+				return flag
 			});
 
+			svg.selectAll(".hover").classed("hover", false);
+
 			svg.selectAll(".node").classed("active", function (p) {
-				return isInRelated(p, d);
+				flag = isInRelated(p, d);
+				if (flag)
+					accumHTML += generateCard(p)
+				return flag
 			});
 
 			svg.selectAll(".link").classed("hide", function (p) {
-				return !isLinked(p, d);
+				flag = !isLinked(p, d);
+				return flag
 			});
 			svg.selectAll(".node").classed("hide", function (p) {
-				return !isInRelated(p, d);
+				flag =  !isInRelated(p, d);
+				return flag
 			});
-
-			svg.selectAll(".axis").classed("hide", true);
 
 			d3.select(this).classed("active", true);
 			d3.select(this).classed("hide", false);
 		}
+
+		info.html(generateCard(d) + accumHTML);
 	}
 
 	// Clear any highlighted nodes or links.
 	function mouseout() {
 		svg.selectAll(".active").classed("active", false);
-		info.text(defaultInfo);
+		// info.text(defaultInfo);
 	}
 
 	function zoomed() {
-		// dNodes.attr("transform", function(d){
-		// 	return this.getAttribute("transform") +d3.event.transform;
-		// });;
-		// dLinks.attr("transform", d3.event.transform);
-		// dAxes.attr("transform", d3.event.transform);
 		svg.attr("transform", d3.event.transform);
 	}
 });
