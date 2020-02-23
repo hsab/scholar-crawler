@@ -1,113 +1,51 @@
-// var width = 960,
-// 	height = 850,
-
-
-var margin = {
-		top: 150,
-		right: 0,
-		bottom: 10,
-		left: 150
-	},
-	width = window.innerWidth,
-	height = window.innerHeight,
-	innerRadius = 90,
-	outerRadius = window.innerHeight / 2,
+var width = 960,
+	height = 850,
+	innerRadius = 40,
+	outerRadius = 640,
 	majorAngle = 2 * Math.PI / 3,
-	minorAngle = 1 * Math.PI;
+	minorAngle = 1 * Math.PI / 12;
 
-var angle = d3.scaleLinear()
-	.range([0, 2 * Math.PI - 0.2]);
-// .domain(["source", "source-target", "target-source", "target"])
+var angle = d3.scaleOrdinal()
+	.domain(["source", "source-target", "target-source", "target"])
+	.range([0, majorAngle - minorAngle, majorAngle + minorAngle, 2 * majorAngle]);
 
 var radius = d3.scaleLinear()
 	.range([innerRadius, outerRadius]);
 
-var radiusScale = d3.scaleLinear()
-	.range([5, 20]);
-
 var color = d3.scaleOrdinal(d3.schemeCategory10);
 
-d3.select("#chartId")
-	.append("div")
-	.classed("svg-container", true)
-	.append("svg")
-	.attr("preserveAspectRatio", "xMinYMin meet")
-	.attr("viewBox", "0 0 " + window.innerWidth + " " + window.innerHeight)
-	.classed("svg-content-responsive", true)
-
-// d3.select("#chartId")
-//   .append("div")
-//   .append("svg")
-//   .attr("width", 600)
-//   .attr("height", 400);
-
-var svg = d3.select("svg"),
-	width = +svg.attr("width"),
-	height = +svg.attr("height");
-
-svg = svg.append("g").attr("transform", "translate(" + outerRadius + "," + outerRadius + ")");
-// var svg = d3.select("#chartId").append("svg")
-// .attr("width", width)
-// .attr("height", height)
-// .append("g")
+var svg = d3.select("#chartId").append("svg")
+	.attr("width", width)
+	.attr("height", height)
+	.append("g")
+	.attr("transform", "translate(" + outerRadius * .20 + "," + outerRadius * .57 + ")");
 
 // Load the data and display the plot!
-d3.json("dbClean.json", function (graph) {
-	nodes = []
-	for (const entry of Object.keys(graph)) {
-		temp = graph[entry];
-		nodes.push(temp)
-	}
-
+d3.json("flare-imports.json", function (nodes) {
 	var nodesByName = {},
 		links = [],
 		formatNumber = d3.format(",d"),
 		defaultInfo;
 
-	var highestCitationCount = 0
-	var lowestCitationCount = 500000000
-	var highestModularity = 0
 	// Construct an index by node name.
 	nodes.forEach(function (d) {
 		d.connectors = [];
-		d.packageName = d.info_louvain_modularity;
-		nodesByName[d.gs_id] = d;
-		if (d.info_page_rank > highestCitationCount)
-			highestCitationCount = d.info_page_rank
-		if (d.info_page_rank < lowestCitationCount)
-			lowestCitationCount = d.info_page_rank
-		if (d.packageName > highestModularity)
-			highestModularity = d.packageName
+		d.packageName = d.name.split(".")[1];
+		nodesByName[d.name] = d;
 	});
 
-
-	d3.select("svg").call(d3.zoom()
-		.extent([
-			[0, 0],
-			[width, height]
-		])
-		.scaleExtent([-8, 8])
-		.on("zoom", zoomed));
-
-
-
-	radiusScale.domain([lowestCitationCount, highestCitationCount]);
-	angle.domain([0, highestModularity])
 	// Convert the import lists into links with sources and targets.
 	nodes.forEach(function (source) {
-		related = Object.keys(source.related)
-		related.forEach(function (targetName) {
+		source.imports.forEach(function (targetName) {
 			var target = nodesByName[targetName];
-			if (!source.source)
-				source.connectors.push(source.source = {
-					node: source,
-					degree: 0
-				});
-			if (!target.target)
-				target.connectors.push(target.target = {
-					node: target,
-					degree: 0
-				});
+			if (!source.source) source.connectors.push(source.source = {
+				node: source,
+				degree: 0
+			});
+			if (!target.target) target.connectors.push(target.target = {
+				node: target,
+				degree: 0
+			});
 			links.push({
 				source: source.source,
 				target: target.target
@@ -144,16 +82,16 @@ d3.json("dbClean.json", function (graph) {
 	// Nest nodes by type, for computing the rank.
 	var nodesByType = d3.nest()
 		.key(function (d) {
-			return d.info_louvain_modularity;
+			return d.type;
 		})
 		.sortKeys(d3.ascending)
 		.entries(nodes);
 
 	// Duplicate the target-source axis as source-target.
-	// nodesByType.push({
-	// 	key: "source-target",
-	// 	values: nodesByType[2].values
-	// });
+	nodesByType.push({
+		key: "source-target",
+		values: nodesByType[2].values
+	});
 
 	// Compute the rank for each type, with padding between packages.
 	nodesByType.forEach(function (type) {
@@ -172,23 +110,20 @@ d3.json("dbClean.json", function (graph) {
 	}));
 
 	// Draw the axes.
-	var dAxes = svg.selectAll(".axis")
+	svg.selectAll(".axis")
 		.data(nodesByType)
 		.enter().append("line")
 		.attr("class", "axis")
 		.attr("transform", function (d) {
-			if (isNaN(d.key))
-				console.log("hello");
-
 			return "rotate(" + degrees(angle(d.key)) + ")";
 		})
-		.attr("x1", radius(0) * 2 - 10)
+		.attr("x1", radius(-2))
 		.attr("x2", function (d) {
-			return radius(d.count * 4) + 10;
+			return radius(d.count + 2);
 		});
 
 	// Draw the links.
-	var dLinks = svg.append("g")
+	svg.append("g")
 		.attr("class", "links")
 		.selectAll(".link")
 		.data(links)
@@ -196,124 +131,64 @@ d3.json("dbClean.json", function (graph) {
 		.attr("class", "link")
 		.attr("d", link()
 			.angle(function (d) {
-				return angle(d.node.packageName);
+				return angle(d.type);
 			})
 			.radius(function (d) {
-				return radius(d.node.index * 4);
+				return radius(d.node.index);
 			}))
 		.on("mouseover", linkMouseover)
 		.on("mouseout", mouseout);
 
 	// Draw the nodes. Note that each node can have up to two connectors,
 	// representing the source (outgoing) and target (incoming) links.
-	var dNodes = svg.append("g")
+	svg.append("g")
 		.attr("class", "nodes")
 		.selectAll(".node")
 		.data(nodes)
-		.enter().append("circle")
+		.enter().append("g")
 		.attr("class", "node")
 		.style("fill", function (d) {
 			return color(d.packageName);
 		})
+		.selectAll("circle")
+		.data(function (d) {
+			return d.connectors;
+		})
+		.enter().append("circle")
 		.attr("transform", function (d) {
-			// console.log(d.packageName);
-			return "rotate(" + degrees(angle(d.packageName)) + ")";
-
+			return "rotate(" + degrees(angle(d.type)) + ")";
 		})
 		.attr("cx", function (d) {
-			return radius(d.index * 4);
+			return radius(d.node.index);
 		})
-		.attr("r", function (d) {
-			// return 4;
-			return radiusScale(d.info_page_rank);
-		})
+		.attr("r", 4)
 		.on("mouseover", nodeMouseover)
-		// .on("mouseout", mouseout)
-		.on("click", nodeMouseClick)
+		.on("mouseout", mouseout);
 
 	// Highlight the link and connected nodes on mouseover.
 	function linkMouseover(d) {
 		svg.selectAll(".link").classed("active", function (p) {
 			return p === d;
 		});
-		svg.selectAll(".node").classed("active", function (p) {
-			return p === d.source.node || p === d.target.node;
+		svg.selectAll(".node circle").classed("active", function (p) {
+			return p === d.source || p === d.target;
 		});
-		info.text(d.source.node.title + " → " + d.target.node.title);
+		info.text(d.source.node.name + " → " + d.target.node.name);
 	}
 
-	svg.on("click", function () {
-		console.log("hellalsdlasdl");
-
-		d3.select(this).classed("active", false);
-		d3.select(this).classed("hide", false);
-	})
-
-
-	function isLinked(p, d) {
-		return p.source.node === d || p.target.node === d;
-	}
-
-	function isInRelated(p, d) {
-		return (p.gs_id in d.related) || (d.gs_id in p.related);
-	}
 	// Highlight the node and connected links on mouseover.
 	function nodeMouseover(d) {
 		svg.selectAll(".link").classed("active", function (p) {
-			return isLinked(p, d);
+			return p.source === d || p.target === d;
 		});
-
-		svg.selectAll(".node").classed("active", function (p) {
-			return isInRelated(p, d);
-		});
-
 		d3.select(this).classed("active", true);
-		d3.select(this).classed("hide", false);
-
-		info.text(d.title);
-	}
-
-	function nodeMouseClick(d) {
-		if (d3.select(this).classed("active")) {
-			svg.selectAll(".active").classed("active", false);
-			svg.selectAll(".hide").classed("hide", false);
-
-		} else {
-			svg.selectAll(".link").classed("active", function (p) {
-				return isLinked(p, d);
-			});
-
-			svg.selectAll(".node").classed("active", function (p) {
-				return isInRelated(p, d);
-			});
-
-			svg.selectAll(".link").classed("hide", function (p) {
-				return !isLinked(p, d);
-			});
-			svg.selectAll(".node").classed("hide", function (p) {
-				return !isInRelated(p, d);
-			});
-
-			svg.selectAll(".axis").classed("hide", true);
-
-			d3.select(this).classed("active", true);
-			d3.select(this).classed("hide", false);
-		}
+		info.text(d.node.name);
 	}
 
 	// Clear any highlighted nodes or links.
 	function mouseout() {
 		svg.selectAll(".active").classed("active", false);
 		info.text(defaultInfo);
-	}
-
-	function zoomed() {
-		// dNodes.attr("transform", function(d){
-		// 	return this.getAttribute("transform") +d3.event.transform;
-		// });;
-		// dLinks.attr("transform", d3.event.transform);
-		// dAxes.attr("transform", d3.event.transform);
-		svg.attr("transform", d3.event.transform);
 	}
 });
 

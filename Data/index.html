@@ -10,7 +10,7 @@
 
 		.nodes circle {
 			stroke: #fff;
-			stroke-width: 1.5px;
+			stroke-width: 0px;
 		}
 
 		text {
@@ -34,6 +34,53 @@
 			top: 10px;
 			left: 0;
 		}
+
+		.link {
+			fill: none;
+			stroke: #999;
+			stroke-width: 1.5px;
+			stroke-opacity: .2;
+		}
+
+		.link.active {
+			/* stroke: red; */
+			stroke-width: 3px;
+			stroke: red;
+			stroke-opacity: 1;
+		}
+
+		.link.hide {
+			stroke-opacity: 0.2;
+			stroke-width: 0px;
+		}
+
+		.node.active {
+			stroke: red;
+			stroke-width: 2px;
+			stroke-opacity: 1;
+		}
+
+		circle.active {
+			stroke: red;
+			stroke-width: 2px;
+			stroke-opacity: 1;
+		}
+
+		circle.hide {
+			opacity: 0.2;
+			display: none;
+			fill: gray !important;
+		}
+
+		.axis {
+			stroke: #000;
+			stroke-width: 1.5px;
+		}
+
+		.axis.hide {
+			display: none;
+
+		}
 	</style>
 	<script src="https://d3js.org/d3.v4.min.js"></script>
 
@@ -46,6 +93,7 @@
 
 <body>
 	<!-- <svg width="960" height="600"></svg> -->
+	<p id="info"></p>
 	<div id="chartId"></div>
 	<script src="main.js"></script>
 </body>
