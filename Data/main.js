@@ -172,20 +172,20 @@ d3.json("dbClean.json", function (graph) {
 	}));
 
 	// Draw the axes.
-	var dAxes = svg.selectAll(".axis")
-		.data(nodesByType)
-		.enter().append("line")
-		.attr("class", "axis")
-		.attr("transform", function (d) {
-			if (isNaN(d.key))
-				console.log("hello");
+	// var dAxes = svg.selectAll(".axis")
+	// 	.data(nodesByType)
+	// 	.enter().append("line")
+	// 	.attr("class", "axis")
+	// 	.attr("transform", function (d) {
+	// 		if (isNaN(d.key))
+	// 			console.log("hello");
 
-			return "rotate(" + degrees(angle(d.key)) + ")";
-		})
-		.attr("x1", radius(0) * 2 - 10)
-		.attr("x2", function (d) {
-			return radius(d.count * 4) + 10;
-		});
+	// 		return "rotate(" + degrees(angle(d.key)) + ")";
+	// 	})
+	// 	.attr("x1", radius(0) * 2 - 10)
+	// 	.attr("x2", function (d) {
+	// 		return radius(d.count * 4)* 2 + 10;
+	// 	});
 
 	// Draw the links.
 	var dLinks = svg.append("g")
@@ -199,7 +199,7 @@ d3.json("dbClean.json", function (graph) {
 				return angle(d.node.packageName);
 			})
 			.radius(function (d) {
-				return radius(d.node.index * 4);
+				return radius(d.node.index * 4) * 2;
 			}))
 		.on("mouseover", linkMouseover)
 		.on("mouseout", mouseout);
@@ -221,7 +221,7 @@ d3.json("dbClean.json", function (graph) {
 
 		})
 		.attr("cx", function (d) {
-			return radius(d.index * 4);
+			return radius(d.index * 4) * 2;
 		})
 		.attr("r", function (d) {
 			// return 4;
