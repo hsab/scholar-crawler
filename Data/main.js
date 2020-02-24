@@ -168,20 +168,25 @@ d3.json("dbClean.json", function (graph) {
 	}));
 
 	// Draw the axes.
-	// var dAxes = svg.selectAll(".axis")
-	// 	.data(nodesByType)
-	// 	.enter().append("line")
-	// 	.attr("class", "axis")
-	// 	.attr("transform", function (d) {
-	// 		if (isNaN(d.key))
-	// 			console.log("hello");
-
-	// 		return "rotate(" + degrees(angle(d.key)) + ")";
-	// 	})
-	// 	.attr("x1", radius(0) * 2 - 10)
-	// 	.attr("x2", function (d) {
-	// 		return radius(d.count * 4)* 2 + 10;
-	// 	});
+	var dAxes = svg.selectAll(".axis")
+		.data(nodesByType)
+		.enter().append("circle")
+		.attr("class", "axis")
+		.attr("transform", function (d) {
+			return "rotate(" + degrees(angle(d.key)) + ")";
+		})
+		.style("cursor", "pointer")
+		.style("fill", "transparent")
+		.style("stroke-width", "3px")
+		.style("stroke", function (d) {
+			return color(d.key);
+		})
+		.attr("cx", radius(0) * 2 - 20)
+		.attr("r", 5)
+		.on("click", clickOnAxis)
+	// .attr("x2", function (d) {
+	// 	return radius(d.count * 4)* 2 + 10;
+	// });
 
 	// Draw the links.
 	var dLinks = svg.append("g")
@@ -252,9 +257,22 @@ d3.json("dbClean.json", function (graph) {
 			}
 		})
 
-
 	var dCards = d3.selectAll(".find")
 		.on("click", cardMouseOver);
+
+	var dReset = svg.selectAll(".reset")
+		.data([1])
+		.enter().append("circle")
+		.attr("class", "axis")
+		.style("cursor", "pointer")
+		.style("fill", "black")
+		.style("stroke-width", "0")
+		.style("stroke", function (d) {
+			return color(d.key);
+		})
+		.attr("cx", 0)
+		.attr("r", 20)
+		.on("click", resetGraph)
 
 	function setCards(html) {
 		info.html(html);
@@ -265,6 +283,32 @@ d3.json("dbClean.json", function (graph) {
 
 	function isLinked(p, d) {
 		return p.source.node === d || p.target.node === d;
+	}
+
+	function resetGraph() {
+		setNodeClass(null, "hover", function () {
+			return false
+		});
+
+		setNodeClass(null, "active", function () {
+			return false
+		});
+
+		setNodeClass(null, "hide", function () {
+			return false
+		});
+
+		setLinkClass(null, "active", function () {
+			return false
+		});
+
+		setLinkClass(null, "hover", function () {
+			return false
+		});
+
+		setLinkClass(null, "hide", function () {
+			return false
+		});
 	}
 
 	function isInRelated(p, d) {
@@ -293,6 +337,59 @@ d3.json("dbClean.json", function (graph) {
 		})
 
 		return temp;
+	}
+
+
+	function isolateNodes(d, func) {
+		var accumHTML = ""
+
+		svg.selectAll(".node").classed("active", function (p) {
+			var flag = func(p, d);
+			if (flag)
+				accumHTML += generateCard(p)
+			return flag
+		});
+
+		svg.selectAll(".node").classed("hide", function (p) {
+			var flag = func(p, d);
+			return !flag
+		});
+
+		return accumHTML
+	}
+
+
+	function isolateLinks(d, func) {
+		svg.selectAll(".link").classed("active", function (p) {
+			return func(p, d);
+		});
+
+		svg.selectAll(".link").classed("hide", function (p) {
+			return !func(p, d)
+		});
+	}
+
+	function setNodeClass(d, clss, func) {
+		var accumHTML = ""
+
+		svg.selectAll(".node").classed(clss, function (p) {
+			var flag = func(p, d);
+			if (flag)
+				accumHTML += generateCard(p)
+			return flag
+		});
+
+		return accumHTML;
+	}
+
+	function setLinkClass(d, clss, func) {
+		svg.selectAll(".link").classed(clss, function (p) {
+			return func(p, d);
+		});
+	}
+
+	function hideLinks(flag) {
+		svg.selectAll(".link").classed("hide", flag);
 	}
 
 	function cardMouseOver(d) {
@@ -337,7 +434,7 @@ d3.json("dbClean.json", function (graph) {
 				// }
 
 
-				console.log(elem);
+				// console.log(elem);
 				zoomG.attr("transform", "translate(" + x + "," + y + ") " + scale);
 
 				// svg.select(this).classed("active", true);
@@ -350,40 +447,46 @@ d3.json("dbClean.json", function (graph) {
 	}
 
 
-	function linkMouseClick(d) {
-		svg.selectAll(".link").classed("active", function (p) {
-			return p === d;
-		});
-		svg.selectAll(".node").classed("active", function (p) {
-			return isLinked(d, p);
-		});
+	function clickOnAxis(d) {
+		var accumHTML = isolateNodes(d, function (a, b) {
+			return a.packageName == b.key;
+		})
+		hideLinks(true)
 
-		svg.selectAll(".link").classed("hide", function (p) {
-			flag = (p !== d);
-			return flag
-		});
-		svg.selectAll(".node").classed("hide", function (p) {
-			flag = !isLinked(d, p);
-			return flag
-		});
+		setCards(accumHTML)
+
+	}
+
+	function linkMouseClick(d) {
+		isolateNodes(d, function (p, d) {
+			return isLinked(d, p);
+		})
+
+		isolateLinks(d, function (p, d) {
+			return p === d;
+		})
+
 		setCards(generateCard(d.source.node) + generateCard(d.target.node));
 	}
 
 	// Highlight the link and connected nodes on mouseover.
 	function linkMouseover(d) {
-		svg.selectAll(".link").classed("hover", function (p) {
+		setLinkClass(d, "hover", function (p, d) {
 			return p === d;
-		});
-		svg.selectAll(".node").classed("hover", function (p) {
+		})
+
+		var accumHTML = setNodeClass(d, "hover", function (p, d) {
 			return p === d.source.node || p === d.target.node;
-		});
-		setCards(generateCard(d.source.node) + generateCard(d.target.node));
+		})
+
+		setCards(accumHTML)
 	}
 
 	// Highlight the node and connected links on mouseover.
 	function nodeMouseover(d) {
-		accumHTML = generateCard(d)
+		var accumHTML = generateCard(d)
 
+		svg.selectAll(".active").classed("active", false);
 		svg.selectAll(".link").classed("hover", function (p) {
 			return isLinked(p, d);
 		});
@@ -399,46 +502,32 @@ d3.json("dbClean.json", function (graph) {
 		d3.select(this).classed("hover", true);
 		d3.select(this).classed("hide", false);
 
-		elem = this.getBoundingClientRect()
-		console.log(elem.top, elem.left);
-
+		// elem = this.getBoundingClientRect()
+		// console.log(elem.top, elem.left);
 
 		setCards(accumHTML);
 	}
 
 	function nodeMouseClick(d) {
-		accumHTML = ""
-		if (d3.select(this).classed("active")) {
-			svg.selectAll(".active").classed("active", false);
-			svg.selectAll(".hide").classed("hide", false);
-
-		} else {
-			svg.selectAll(".link").classed("active", function (p) {
-				flag = isLinked(p, d);
-				return flag
-			});
-
+		var accumHTML = ""
+		// if (d3.select(this).classed("active")) {
+		// 	svg.selectAll(".active").classed("active", false);
+		// 	svg.selectAll(".hide").classed("hide", false);
+		// } else {
 			svg.selectAll(".hover").classed("hover", false);
 
-			svg.selectAll(".node").classed("active", function (p) {
-				flag = isInRelated(p, d);
-				if (flag)
-					accumHTML += generateCard(p)
-				return flag
-			});
 
-			svg.selectAll(".link").classed("hide", function (p) {
-				flag = !isLinked(p, d);
-				return flag
-			});
-			svg.selectAll(".node").classed("hide", function (p) {
-				flag = !isInRelated(p, d);
-				return flag
-			});
+			accumHTML += isolateNodes(d, function (p, d) {
+				return isInRelated(p, d);
+			})
+
+			isolateLinks(d, function (p, d) {
+				return isLinked(p, d);
+			})
 
 			d3.select(this).classed("active", true);
 			d3.select(this).classed("hide", false);
-		}
+		// }
 
 		setCards(generateCard(d) + accumHTML);
 	}
