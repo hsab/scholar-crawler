@@ -429,7 +429,8 @@ d3.json("dbClean.json", function (graph) {
 	function cardMouseOver(d) {
 		var gs_id = d3.select(this).attr('id')
 		svg.selectAll(".node").each(function (p) {
-			if (p.gs_id == gs_id) {
+			var isHidden = d3.select(this).classed("hide");
+			if (p.gs_id == gs_id && !isHidden) {
 				var x = 0;
 				var y = 0;
 				var elem = this.getBoundingClientRect()
@@ -485,7 +486,7 @@ d3.json("dbClean.json", function (graph) {
 
 		isolateLinks(d, function (p, d) {
 			var t = parseInt(d.key)
-			return t == p.source.node.packageName || t == p.source.node.packageName;
+			return t == p.source.node.packageName || t == p.target.node.packageName;
 		})
 		// hideLinks(true)
 
