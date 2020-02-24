@@ -6,8 +6,9 @@ var template = Handlebars.compile(`
 	</a>
 	<div class="desc">{{desc}}</div>
 	<div class="scholar">
-		<span class="find" id="{{gs_id}}" style="cursor: pointer;">Center Node</span>
-		<span class="type">{{type}}</span>
+		<span class="find" id="{{gs_id}}" style="cursor: pointer;"><i class="fas fa-compress-arrows-alt"></i></span>
+		<span class="isolate" id="{{gs_id}}" style="cursor: pointer;"><i class="fas fa-project-diagram"></i></span>
+		<span class="type" >{{type}}</span>
 		<a target="_blank" href="https://scholar.google.com/scholar?cites={{cited_by_link}}&as_sdt=2005&sciodt=0,5&hl=en" class="sc_citing">Cited by {{cited_by}}</a>
 		<a target="_blank" href="https://scholar.google.com/scholar?q=related:{{related_link}}:scholar.google.com/&scioq=&hl=en&as_sdt=2005&sciodt=0,5" class="related">Related</a>
 	</div>
@@ -60,6 +61,8 @@ var svg = d3.select("svg"),
 
 translateG = svg.append("g").attr("id", "test-trans").attr("transform", "translate(0,0)");
 zoomG = translateG.append("g")
+var prevTrans;
+
 svg = zoomG.append("g").attr("transform", "translate(" + outerRadius + "," + outerRadius + ")");
 
 
@@ -257,31 +260,13 @@ d3.json("dbClean.json", function (graph) {
 		.on("click", nodeMouseClick)
 
 	var dForm = d3.select("input")
-		.on("keydown", function (e) {
-			// if is ENTER
-			if (d3.event.keyCode == 13) {
-				accumHTML = ""
+		.on("keydown", search)
 
-				term = this.value
-				svg.selectAll(".node").each(function (p) {
-					t = p.title.toLowerCase().includes(term)
-					d = p.description.toLowerCase().includes(term)
-					i = false
-					Array.from(p.info).forEach(function (item) {
-						i = i || item.toLowerCase().includes(term)
-					});
-
-					if (t || d || i) {
-						accumHTML += generateCard(p);
-					}
-				});
-
-				setCards(accumHTML);
-			}
-		})
-
-	var dCards = d3.selectAll(".find")
+	var dFocus = d3.selectAll(".find")
 		.on("click", cardMouseOver);
+
+	var dIsolate = d3.selectAll(".isolate")
+		.on("click", cardIsolate);
 
 	var dReset = svg.selectAll(".reset")
 		.data([1])
@@ -297,10 +282,36 @@ d3.json("dbClean.json", function (graph) {
 		.attr("r", 20)
 		.on("click", resetGraph)
 
+	function search() {
+		// if is ENTER
+		if (d3.event.keyCode == 13) {
+			accumHTML = ""
+
+			term = this.value
+			svg.selectAll(".node").each(function (p) {
+				t = p.title.toLowerCase().includes(term)
+				d = p.description.toLowerCase().includes(term)
+				i = false
+				Array.from(p.info).forEach(function (item) {
+					i = i || item.toLowerCase().includes(term)
+				});
+
+				if (t || d || i) {
+					accumHTML += generateCard(p);
+				}
+			});
+
+			setCards(accumHTML);
+		}
+	}
+
 	function setCards(html) {
 		info.html(html);
-		dCards = d3.selectAll(".find")
+		dFocus = d3.selectAll(".find")
 			.on("click", cardMouseOver);
+
+		dIsolate = d3.selectAll(".isolate")
+			.on("click", cardIsolate);
 	}
 
 
@@ -417,18 +428,23 @@ d3.json("dbClean.json", function (graph) {
 
 	function cardMouseOver(d) {
 		// var t = d3.select('#test-trans').attr("transform");
-		t = zoomG.attr("transform").split(" ");
-		scale = t[1]
-		trans = t[0]
+		var t = zoomG.attr("transform").split(" ");
+		var scale = t[1]
+		var trans = t[0]
 		t = trans.substring(trans.indexOf("(") + 1, trans.indexOf(")")).split(",");
-		var x = parseFloat(t[0]),
-			y = parseFloat(t[1]);
-		gs_id = d3.select(this).attr('id')
+		var x = parseFloat(t[0]);
+		var y = parseFloat(t[1]);
+
+		var gs_id = d3.select(this).attr('id')
 		svg.selectAll(".node").each(function (p) {
 			if (p.gs_id == gs_id) {
-				elem = this.getBoundingClientRect()
-				midW = window.innerWidth / 2
-				midH = window.innerHeight / 2
+
+
+				var x = 0;
+				var y = 0;
+				var elem = this.getBoundingClientRect()
+				var midW = window.innerWidth / 2
+				var midH = window.innerHeight / 2
 
 				var left = elem.left + (elem.width / 2)
 				var top = elem.top + (elem.height / 2)
@@ -436,7 +452,7 @@ d3.json("dbClean.json", function (graph) {
 				// if (Math.abs(left - midW) > 50) {
 				if (left < midW) {
 					if (left < 0)
-						y += Math.abs(left) + midW
+						x += Math.abs(left) + midW
 					else
 						x += midW - left
 				} else if (left > midW) {
@@ -458,7 +474,11 @@ d3.json("dbClean.json", function (graph) {
 
 
 				// console.log(elem);
-				zoomG.attr("transform", "translate(" + x + "," + y + ") " + scale);
+				var tr = d3.zoomTransform(zoomElem.node());
+				console.log(tr);
+				// zoom.translateBy(zoomElem, x/tr.k, y/tr.k)
+				zoomElem.transition().duration(1000).call(zoom.translateBy, x / tr.k, y / tr.k);
+				// zoomG.attr("transform", "translate(" + x + "," + y + ") " + scale);
 
 				// svg.select(this).classed("active", true);
 				d3.selectAll(".active").classed("active", false);
@@ -468,6 +488,9 @@ d3.json("dbClean.json", function (graph) {
 				d3.select(this).classed("hover", false);
 			}
 		});
+
+
+
 	}
 
 
@@ -475,7 +498,12 @@ d3.json("dbClean.json", function (graph) {
 		var accumHTML = isolateNodes(d, function (a, b) {
 			return a.packageName == b.key;
 		})
-		hideLinks(true)
+
+		isolateLinks(d, function (p, d) {
+			var t = parseInt(d.key)
+			return t == p.source.node.packageName || t == p.source.node.packageName;
+		})
+		// hideLinks(true)
 
 		setCards(accumHTML)
 
@@ -532,7 +560,17 @@ d3.json("dbClean.json", function (graph) {
 		setCards(accumHTML);
 	}
 
-	function nodeMouseClick(d) {
+	function cardIsolate(d) {
+		gs_id = d3.select(this).attr('id')
+		svg.selectAll(".node").each(function (p) {
+			if (p.gs_id == gs_id) {
+				nodeMouseClick(p, this)
+			}
+		});
+
+	}
+
+	function nodeMouseClick(d, element) {
 		var accumHTML = ""
 		// if (d3.select(this).classed("active")) {
 		// 	svg.selectAll(".active").classed("active", false);
@@ -549,8 +587,13 @@ d3.json("dbClean.json", function (graph) {
 			return isLinked(p, d);
 		})
 
-		d3.select(this).classed("active", true);
-		d3.select(this).classed("hide", false);
+		if (!Number.isInteger(element)) {
+			d3.select(element).classed("active", true);
+			d3.select(element).classed("hide", false);
+		} else {
+			d3.select(this).classed("active", true);
+			d3.select(this).classed("hide", false);
+		}
 		// }
 
 		setCards(generateCard(d) + accumHTML);
@@ -563,16 +606,41 @@ d3.json("dbClean.json", function (graph) {
 	}
 
 
-	d3.select("svg").call(d3.zoom()
-		.extent([
-			[0, 0],
-			[width, height]
-		])
+
+	var zoom = d3.zoom()
 		.scaleExtent([-8, 8])
-		.on("zoom", zoomed));
+		.on("zoom", zoomed)
+
+	var zoomElem = d3.select("svg");
+	zoomElem.call(zoom);
+
+
+	function decomposeTranslation(transZ) {
+		var temp = transZ.substring(transZ.indexOf("(") + 1, transZ.indexOf(")")).split(",");
+		return [parseFloat(temp[0]), parseFloat(temp[1])];
+
+	}
+
+	function composeTranslation(x, y) {
+		return `translate(${x},${y}) `
+	}
 
 	function zoomed() {
-		zoomG.attr("transform", d3.event.transform);
+		z = d3.event.transform
+
+		// try {
+		// 	t = zoomG.attr("transform").split(" ");
+		// 	t = decomposeTranslation(t[0])
+
+		// 	dx = prevTrans[0] - z.x;
+		// 	dy = prevTrans[1] - z.y;
+		// 	z.x = dx + t[0]
+		// 	z.y = dy + t[1]
+		// 	// zoomG.attr("transform", decomposeTranslation(z.x, z.y) + `scale(${z.k})`);
+		// } catch {}
+		zoomG.attr("transform", z);
+		// zoom.transform(zoomElem, d3.zoomTransform(zoomElem.node()))
+		prevTrans = [z.x, z.y];
 	}
 });
 
