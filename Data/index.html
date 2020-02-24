@@ -86,14 +86,14 @@
 			display: none;
 		}
 
-		#details {
+		#details-container {
 			position: absolute;
 			height: calc(100% - 60px);
 			margin: 10px;
-			width: 250px;
+			width: 350px;
 			z-index: 9999;
-			border-radius: 2px;
-			border: 1px solid #EEEEEE;
+			/* border-radius: 2px; */
+			/* border: 1px solid #EEEEEE; */
 			padding: 5px;
 			padding-top: 0px;
 			background: rgba(255, 255, 255, 0.9);
@@ -144,6 +144,7 @@
 			margin-bottom: .2em;
 			margin-top: 0;
 			color: #1a0dab;
+			font-weight: normal;
 		}
 
 		.card {
@@ -151,11 +152,15 @@
 			border-radius: 2px;
 			padding: 17px;
 			margin-top: 10px;
-			border: 1px solid #DDD;
+			border-left: 6px solid #DDD;
 		}
 
 		.card:first-child {
 			margin-top: 5px;
+		}
+
+		.card:first-child>a>h2 {
+			font-weight: bold;
 		}
 
 		.scholar a {
@@ -167,7 +172,8 @@
 
 		/* width */
 		::-webkit-scrollbar {
-			width: 2px;
+			width: 5px;
+			height: 5px;
 		}
 
 		/* Track */
@@ -177,12 +183,22 @@
 
 		/* Handle */
 		::-webkit-scrollbar-thumb {
-			background: #555;
+			background: #888;
+			border-radius: 50px;
 		}
 
 		/* Handle on hover */
 		::-webkit-scrollbar-thumb:hover {
-			background: #222;
+			background: #aaa;
+		}
+
+		input[type="text"] {
+			width: 100%;
+			font-size: 1.5em;
+			padding: 5px;
+			box-sizing: border-box;
+			border-radius: 2px;
+			border: 1px solid #aaa;
 		}
 	</style>
 	<script src="https://d3js.org/d3.v4.min.js"></script>
@@ -197,7 +213,10 @@
 
 
 <body>
-	<div id="details">
+	<div id="details-container">
+		<input type="text">
+		<div id="details">
+		</div>
 	</div>
 	<div id="chartId"></div>
 	<script src="main.js"></script>

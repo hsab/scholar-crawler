@@ -1,5 +1,5 @@
 var template = Handlebars.compile(`
-<div class="card">
+<div class="card" style="border-color: {{col}}">
 	<a target="_blank" class="link" href="{{link}}">
 		<h2 class="title">{{title}}</h2>
 		<span class="info">{{info}}</span>
@@ -36,6 +36,7 @@ var radius = d3.scaleLinear()
 var radiusScale = d3.scaleLinear()
 	.range([5, 20]);
 
+var color = d3.scaleOrdinal(d3.schemeCategory10);
 var color = d3.scaleOrdinal(d3.schemeCategory10);
 
 d3.select("#chartId")
@@ -212,6 +213,7 @@ d3.json("dbClean.json", function (graph) {
 				return radius(d.node.index * 2) * 2;
 			}))
 		.on("mouseover", linkMouseover)
+		.on("click", linkMouseClick)
 		.on("mouseout", mouseout);
 
 	// Draw the nodes. Note that each node can have up to two connectors,
@@ -241,6 +243,29 @@ d3.json("dbClean.json", function (graph) {
 		// .on("mouseout", mouseout)
 		.on("click", nodeMouseClick)
 
+	var dForm = d3.select("input")
+		.on("keydown", function (e) {
+			// if is ENTER
+			if (d3.event.keyCode == 13) {
+				accumHTML = ""
+
+				term = this.value
+				svg.selectAll(".node").each(function (p) {
+					t = p.title.toLowerCase().includes(term)
+					d = p.description.toLowerCase().includes(term)
+					i = false
+					Array.from(p.info).forEach(function (item) {
+						i = i || item.toLowerCase().includes(term)
+					});
+
+					if (t || d || i) {
+						accumHTML += generateCard(p);
+					}
+				});
+
+				info.html(accumHTML);
+			}
+		})
 
 	function isLinked(p, d) {
 		return p.source.node === d || p.target.node === d;
@@ -257,11 +282,13 @@ d3.json("dbClean.json", function (graph) {
 			inf += `${item} ${sufix}`
 		})
 
+		c = d3.color(color(d.packageName))
 		temp = template({
 			link: d.link,
 			title: d.title,
 			desc: d.description,
 			info: inf,
+			col: `rgba(${c.r},${c.g},${c.b}, 1)`,
 			cited_by: d.citation_count,
 			cited_by_link: d.cite_url,
 			related_link: d.gs_id
@@ -270,6 +297,24 @@ d3.json("dbClean.json", function (graph) {
 		return temp;
 	}
 
+	function linkMouseClick(d) {
+		svg.selectAll(".link").classed("active", function (p) {
+			return p === d;
+		});
+		svg.selectAll(".node").classed("active", function (p) {
+			return isLinked(d, p);
+		});
+
+		svg.selectAll(".link").classed("hide", function (p) {
+			flag = (p !== d);
+			return flag
+		});
+		svg.selectAll(".node").classed("hide", function (p) {
+			flag = !isLinked(d, p);
+			return flag
+		});
+		info.html(generateCard(d.source.node) + generateCard(d.target.node));
+	}
 
 	// Highlight the link and connected nodes on mouseover.
 	function linkMouseover(d) {
@@ -279,24 +324,29 @@ d3.json("dbClean.json", function (graph) {
 		svg.selectAll(".node").classed("hover", function (p) {
 			return p === d.source.node || p === d.target.node;
 		});
-		// info.text(d.source.node.title + " → " + d.target.node.title);
 		info.html(generateCard(d.source.node) + generateCard(d.target.node));
 	}
 
 	// Highlight the node and connected links on mouseover.
 	function nodeMouseover(d) {
+		accumHTML = generateCard(d)
+
 		svg.selectAll(".link").classed("hover", function (p) {
 			return isLinked(p, d);
 		});
 
 		svg.selectAll(".node").classed("hover", function (p) {
-			return isInRelated(p, d);
+			flag = isInRelated(p, d);
+			if (flag)
+				accumHTML += generateCard(p)
+			return flag
 		});
+
 
 		d3.select(this).classed("hover", true);
 		d3.select(this).classed("hide", false);
 
-		info.html(generateCard(d));
+		info.html(accumHTML);
 	}
 
 	function nodeMouseClick(d) {
@@ -325,7 +375,7 @@ d3.json("dbClean.json", function (graph) {
 				return flag
 			});
 			svg.selectAll(".node").classed("hide", function (p) {
-				flag =  !isInRelated(p, d);
+				flag = !isInRelated(p, d);
 				return flag
 			});
 
