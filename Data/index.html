@@ -65,7 +65,7 @@
 		}
 
 		.node.hover {
-			stroke: black;
+			stroke: #222;
 			stroke-width: 2px;
 			stroke-opacity: 1;
 		}
@@ -73,7 +73,7 @@
 		.link.hover {
 			/* stroke: red; */
 			stroke-width: 3px;
-			stroke: black;
+			stroke: #222;
 			stroke-opacity: 0.5;
 		}
 
@@ -82,7 +82,7 @@
 		}
 
 		.axis {
-			stroke: #000;
+			stroke: #222;
 			stroke-width: 1.5px;
 		}
 
@@ -203,6 +203,20 @@
 			box-sizing: border-box;
 			border-radius: 2px;
 			border: 1px solid #aaa;
+		}
+
+		@keyframes shadow-pulse {
+			0% {
+				box-shadow: 0 0 0 0px rgba(0, 0, 0, 0.2);
+			}
+
+			100% {
+				box-shadow: 0 0 0 35px rgba(0, 0, 0, 0);
+			}
+		}
+
+		.pulse {
+			animation: shadow-pulse 1s infinite;
 		}
 	</style>
 	<script src="https://d3js.org/d3.v4.min.js"></script>

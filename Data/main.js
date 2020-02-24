@@ -38,8 +38,13 @@ var radius = d3.scaleLinear()
 var radiusScale = d3.scaleLinear()
 	.range([5, 20]);
 
-var color = d3.scaleOrdinal(d3.schemeCategory10);
-var color = d3.scaleOrdinal(d3.schemeCategory10);
+var colors = ["#7f0000", "#cc0000", "#ff4444", "#ff7f7f", "#ffb2b2", "#995100", "#cc6c00", "#ff8800", "#ffbb33", "#ffe564", "#2c4c00", "#436500", "#669900", "#99cc00", "#d2fe4c", "#3c1451", "#6b238e", "#9933cc", "#aa66cc", "#bc93d1", "#004c66", "#007299", "#0099cc", "#33b5e5", "#8ed5f0", "#660033", "#b20058", "#e50072", "#ff3298", "#ff7fbf"]
+// var color = d3.scaleOrdinal(colors);
+var colors = d3.schemeCategory10
+colors = colors.concat(d3.schemeCategory20)
+colors = colors.concat(d3.schemeCategory20b)
+colors = colors.concat(d3.schemeCategory20c)
+var color = d3.scaleOrdinal(colors);
 
 d3.select("#chartId")
 	.append("div")
@@ -167,8 +172,25 @@ d3.json("dbClean.json", function (graph) {
 		return d.index;
 	}));
 
-	// Draw the axes.
+
 	var dAxes = svg.selectAll(".axis")
+		.data(nodesByType)
+		.enter().append("line")
+		.attr("class", "axis")
+		.attr("transform", function (d) {
+			return "rotate(" + degrees(angle(d.key)) + ")";
+		})
+		.style("cursor", "pointer")
+		.style("stroke-width", "2px")
+		.style("stroke", function (d) {
+			return color(d.key);
+		})
+		.attr("x1", radius(0) * 2 - 15)
+		.attr("x2", radius(0) * 2 - 26)
+		.on("click", clickOnAxis)
+
+	// Draw the axes.
+	var dAxesCircle = svg.selectAll(".axiscir")
 		.data(nodesByType)
 		.enter().append("circle")
 		.attr("class", "axis")
@@ -177,13 +199,14 @@ d3.json("dbClean.json", function (graph) {
 		})
 		.style("cursor", "pointer")
 		.style("fill", "transparent")
-		.style("stroke-width", "3px")
+		.style("stroke-width", "2px")
 		.style("stroke", function (d) {
 			return color(d.key);
 		})
-		.attr("cx", radius(0) * 2 - 20)
-		.attr("r", 5)
+		.attr("cx", radius(0) * 2 - 30)
+		.attr("r", 4)
 		.on("click", clickOnAxis)
+
 	// .attr("x2", function (d) {
 	// 	return radius(d.count * 4)* 2 + 10;
 	// });
@@ -265,7 +288,7 @@ d3.json("dbClean.json", function (graph) {
 		.enter().append("circle")
 		.attr("class", "axis")
 		.style("cursor", "pointer")
-		.style("fill", "black")
+		.style("fill", "#222")
 		.style("stroke-width", "0")
 		.style("stroke", function (d) {
 			return color(d.key);
@@ -439,6 +462,7 @@ d3.json("dbClean.json", function (graph) {
 
 				// svg.select(this).classed("active", true);
 				d3.selectAll(".active").classed("active", false);
+				// d3.selectAll(".pulse").classed("pulse", false);
 				d3.selectAll(".hover").classed("hover", false);
 				d3.select(this).classed("active", true);
 				d3.select(this).classed("hover", false);
@@ -514,19 +538,19 @@ d3.json("dbClean.json", function (graph) {
 		// 	svg.selectAll(".active").classed("active", false);
 		// 	svg.selectAll(".hide").classed("hide", false);
 		// } else {
-			svg.selectAll(".hover").classed("hover", false);
+		svg.selectAll(".hover").classed("hover", false);
 
 
-			accumHTML += isolateNodes(d, function (p, d) {
-				return isInRelated(p, d);
-			})
+		accumHTML += isolateNodes(d, function (p, d) {
+			return isInRelated(p, d);
+		})
 
-			isolateLinks(d, function (p, d) {
-				return isLinked(p, d);
-			})
+		isolateLinks(d, function (p, d) {
+			return isLinked(p, d);
+		})
 
-			d3.select(this).classed("active", true);
-			d3.select(this).classed("hide", false);
+		d3.select(this).classed("active", true);
+		d3.select(this).classed("hide", false);
 		// }
 
 		setCards(generateCard(d) + accumHTML);
