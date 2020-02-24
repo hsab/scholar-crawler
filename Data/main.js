@@ -427,19 +427,9 @@ d3.json("dbClean.json", function (graph) {
 	}
 
 	function cardMouseOver(d) {
-		// var t = d3.select('#test-trans').attr("transform");
-		var t = zoomG.attr("transform").split(" ");
-		var scale = t[1]
-		var trans = t[0]
-		t = trans.substring(trans.indexOf("(") + 1, trans.indexOf(")")).split(",");
-		var x = parseFloat(t[0]);
-		var y = parseFloat(t[1]);
-
 		var gs_id = d3.select(this).attr('id')
 		svg.selectAll(".node").each(function (p) {
 			if (p.gs_id == gs_id) {
-
-
 				var x = 0;
 				var y = 0;
 				var elem = this.getBoundingClientRect()
@@ -472,25 +462,19 @@ d3.json("dbClean.json", function (graph) {
 				}
 				// }
 
+				var scale = d3.zoomTransform(zoomElem.node()).k
 
-				// console.log(elem);
-				var tr = d3.zoomTransform(zoomElem.node());
-				console.log(tr);
-				// zoom.translateBy(zoomElem, x/tr.k, y/tr.k)
-				zoomElem.transition().duration(1000).call(zoom.translateBy, x / tr.k, y / tr.k);
-				// zoomG.attr("transform", "translate(" + x + "," + y + ") " + scale);
+				zoomElem.transition().duration(1000).call(zoom.translateBy, x / scale, y /scale)
+					.on("end", function () {
+						zoomElem.transition().duration(1000).call(zoom.scaleTo, 3)
+					});
 
-				// svg.select(this).classed("active", true);
 				d3.selectAll(".active").classed("active", false);
-				// d3.selectAll(".pulse").classed("pulse", false);
 				d3.selectAll(".hover").classed("hover", false);
 				d3.select(this).classed("active", true);
 				d3.select(this).classed("hover", false);
 			}
 		});
-
-
-
 	}
 
 
