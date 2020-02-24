@@ -6,7 +6,7 @@ var template = Handlebars.compile(`
 	</a>
 	<div class="desc">{{desc}}</div>
 	<div class="scholar">
-		<span class="find" id="{{gs_id}}">FIND</span>
+		<span class="find" id="{{gs_id}}" style="cursor: pointer;">Center Node</span>
 		<span class="type">{{type}}</span>
 		<a target="_blank" href="https://scholar.google.com/scholar?cites={{cited_by_link}}&as_sdt=2005&sciodt=0,5&hl=en" class="sc_citing">Cited by {{cited_by}}</a>
 		<a target="_blank" href="https://scholar.google.com/scholar?q=related:{{related_link}}:scholar.google.com/&scioq=&hl=en&as_sdt=2005&sciodt=0,5" class="related">Related</a>
@@ -254,12 +254,12 @@ d3.json("dbClean.json", function (graph) {
 
 
 	var dCards = d3.selectAll(".find")
-		.on("mouseover", cardMouseOver);
+		.on("click", cardMouseOver);
 
 	function setCards(html) {
 		info.html(html);
 		dCards = d3.selectAll(".find")
-			.on("mouseover", cardMouseOver);
+			.on("click", cardMouseOver);
 	}
 
 
@@ -296,10 +296,13 @@ d3.json("dbClean.json", function (graph) {
 	}
 
 	function cardMouseOver(d) {
-		var t = d3.select('#test-trans').attr("transform");
-		t = t.substring(t.indexOf("(")+1, t.indexOf(")")).split(",");
-		var x = parseInt(t[0]),
-			y = parseInt(t[1]);
+		// var t = d3.select('#test-trans').attr("transform");
+		t = zoomG.attr("transform").split(" ");
+		scale = t[1]
+		trans = t[0]
+		t = trans.substring(trans.indexOf("(") + 1, trans.indexOf(")")).split(",");
+		var x = parseFloat(t[0]),
+			y = parseFloat(t[1]);
 		gs_id = d3.select(this).attr('id')
 		svg.selectAll(".node").each(function (p) {
 			if (p.gs_id == gs_id) {
@@ -307,35 +310,35 @@ d3.json("dbClean.json", function (graph) {
 				midW = window.innerWidth / 2
 				midH = window.innerHeight / 2
 
-				var left = elem.left + (elem.width /2)
-				var top = elem.top + (elem.height /2)
+				var left = elem.left + (elem.width / 2)
+				var top = elem.top + (elem.height / 2)
 
 				// if (Math.abs(left - midW) > 50) {
-					if (left < midW) {
-						if (left < 0)
-							y += Math.abs(left) + midW
-						else
-							x += midW - left
-					} else if (left > midW) {
-						x += -(left - midW)
-					}
+				if (left < midW) {
+					if (left < 0)
+						y += Math.abs(left) + midW
+					else
+						x += midW - left
+				} else if (left > midW) {
+					x += -(left - midW)
+				}
 				// }
 
 
 				// if (Math.abs(top - midH) > 50) {
-					if (top < midH) {
-						if (top < 0)
-							y += Math.abs(top) + midH
-						else
-							y += midH - top
-					} else if (top > midH) {
-						y += -(top - midH)
-					}
+				if (top < midH) {
+					if (top < 0)
+						y += Math.abs(top) + midH
+					else
+						y += midH - top
+				} else if (top > midH) {
+					y += -(top - midH)
+				}
 				// }
 
 
 				console.log(elem);
-				translateG.attr("transform", "translate(" + x + "," + y + ")");
+				zoomG.attr("transform", "translate(" + x + "," + y + ") " + scale);
 
 				// svg.select(this).classed("active", true);
 				d3.selectAll(".active").classed("active", false);
