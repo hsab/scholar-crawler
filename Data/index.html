@@ -86,12 +86,12 @@
 
 		#details-container {
 			position: absolute;
-			height: calc(100% - 60px);
+			max-height: calc(100% - 60px);
 			margin: 10px;
 			width: 350px;
 			z-index: 9999;
-			/* border-radius: 2px; */
-			/* border: 1px solid #EEEEEE; */
+			border-radius: 2px;
+			border: 1px solid #EEEEEE;
 			padding: 5px;
 			padding-top: 0px;
 			background: rgba(255, 255, 255, 0.9);
@@ -161,7 +161,7 @@
 			font-weight: bold;
 		}
 
-		.scholar a {
+		.scholar * {
 			color: #1a0dab;
 			font-size: .8em;
 			font-family: sans-serif;

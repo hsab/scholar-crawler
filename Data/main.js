@@ -1,11 +1,13 @@
 var template = Handlebars.compile(`
-<div class="card" style="border-color: {{col}}">
+<div class="card" id="{{gs_id}}" style="border-color: {{col}}">
 	<a target="_blank" class="link" href="{{link}}">
 		<h2 class="title">{{title}}</h2>
 		<span class="info">{{info}}</span>
 	</a>
 	<div class="desc">{{desc}}</div>
 	<div class="scholar">
+		<span class="find" id="{{gs_id}}">FIND</span>
+		<span class="type">{{type}}</span>
 		<a target="_blank" href="https://scholar.google.com/scholar?cites={{cited_by_link}}&as_sdt=2005&sciodt=0,5&hl=en" class="sc_citing">Cited by {{cited_by}}</a>
 		<a target="_blank" href="https://scholar.google.com/scholar?q=related:{{related_link}}:scholar.google.com/&scioq=&hl=en&as_sdt=2005&sciodt=0,5" class="related">Related</a>
 	</div>
@@ -47,21 +49,14 @@ d3.select("#chartId")
 	.attr("viewBox", "0 0 " + window.innerWidth + " " + window.innerHeight)
 	.classed("svg-content-responsive", true)
 
-// d3.select("#chartId")
-//   .append("div")
-//   .append("svg")
-//   .attr("width", 600)
-//   .attr("height", 400);
-
 var svg = d3.select("svg"),
 	width = +svg.attr("width"),
 	height = +svg.attr("height");
 
-svg = svg.append("g").attr("transform", "translate(" + outerRadius + "," + outerRadius + ")");
-// var svg = d3.select("#chartId").append("svg")
-// .attr("width", width)
-// .attr("height", height)
-// .append("g")
+translateG = svg.append("g").attr("id", "test-trans").attr("transform", "translate(0,0)");
+zoomG = translateG.append("g")
+svg = zoomG.append("g").attr("transform", "translate(" + outerRadius + "," + outerRadius + ")");
+
 
 // Load the data and display the plot!
 d3.json("dbClean.json", function (graph) {
@@ -91,16 +86,6 @@ d3.json("dbClean.json", function (graph) {
 		if (d.packageName > highestModularity)
 			highestModularity = d.packageName
 	});
-
-
-	d3.select("svg").call(d3.zoom()
-		.extent([
-			[0, 0],
-			[width, height]
-		])
-		.scaleExtent([-8, 8])
-		.on("zoom", zoomed));
-
 
 
 	radiusScale.domain([lowestCitationCount, highestCitationCount]);
@@ -263,9 +248,20 @@ d3.json("dbClean.json", function (graph) {
 					}
 				});
 
-				info.html(accumHTML);
+				setCards(accumHTML);
 			}
 		})
+
+
+	var dCards = d3.selectAll(".find")
+		.on("mouseover", cardMouseOver);
+
+	function setCards(html) {
+		info.html(html);
+		dCards = d3.selectAll(".find")
+			.on("mouseover", cardMouseOver);
+	}
+
 
 	function isLinked(p, d) {
 		return p.source.node === d || p.target.node === d;
@@ -288,6 +284,8 @@ d3.json("dbClean.json", function (graph) {
 			title: d.title,
 			desc: d.description,
 			info: inf,
+			gs_id: d.gs_id,
+			type: d.ptype == "" ? 'N/A' : d.ptype,
 			col: `rgba(${c.r},${c.g},${c.b}, 1)`,
 			cited_by: d.citation_count,
 			cited_by_link: d.cite_url,
@@ -296,6 +294,58 @@ d3.json("dbClean.json", function (graph) {
 
 		return temp;
 	}
+
+	function cardMouseOver(d) {
+		var t = d3.select('#test-trans').attr("transform");
+		t = t.substring(t.indexOf("(")+1, t.indexOf(")")).split(",");
+		var x = parseInt(t[0]),
+			y = parseInt(t[1]);
+		gs_id = d3.select(this).attr('id')
+		svg.selectAll(".node").each(function (p) {
+			if (p.gs_id == gs_id) {
+				elem = this.getBoundingClientRect()
+				midW = window.innerWidth / 2
+				midH = window.innerHeight / 2
+
+				var left = elem.left + (elem.width /2)
+				var top = elem.top + (elem.height /2)
+
+				// if (Math.abs(left - midW) > 50) {
+					if (left < midW) {
+						if (left < 0)
+							y += Math.abs(left) + midW
+						else
+							x += midW - left
+					} else if (left > midW) {
+						x += -(left - midW)
+					}
+				// }
+
+
+				// if (Math.abs(top - midH) > 50) {
+					if (top < midH) {
+						if (top < 0)
+							y += Math.abs(top) + midH
+						else
+							y += midH - top
+					} else if (top > midH) {
+						y += -(top - midH)
+					}
+				// }
+
+
+				console.log(elem);
+				translateG.attr("transform", "translate(" + x + "," + y + ")");
+
+				// svg.select(this).classed("active", true);
+				d3.selectAll(".active").classed("active", false);
+				d3.selectAll(".hover").classed("hover", false);
+				d3.select(this).classed("active", true);
+				d3.select(this).classed("hover", false);
+			}
+		});
+	}
+
 
 	function linkMouseClick(d) {
 		svg.selectAll(".link").classed("active", function (p) {
@@ -313,7 +363,7 @@ d3.json("dbClean.json", function (graph) {
 			flag = !isLinked(d, p);
 			return flag
 		});
-		info.html(generateCard(d.source.node) + generateCard(d.target.node));
+		setCards(generateCard(d.source.node) + generateCard(d.target.node));
 	}
 
 	// Highlight the link and connected nodes on mouseover.
@@ -324,7 +374,7 @@ d3.json("dbClean.json", function (graph) {
 		svg.selectAll(".node").classed("hover", function (p) {
 			return p === d.source.node || p === d.target.node;
 		});
-		info.html(generateCard(d.source.node) + generateCard(d.target.node));
+		setCards(generateCard(d.source.node) + generateCard(d.target.node));
 	}
 
 	// Highlight the node and connected links on mouseover.
@@ -346,7 +396,11 @@ d3.json("dbClean.json", function (graph) {
 		d3.select(this).classed("hover", true);
 		d3.select(this).classed("hide", false);
 
-		info.html(accumHTML);
+		elem = this.getBoundingClientRect()
+		console.log(elem.top, elem.left);
+
+
+		setCards(accumHTML);
 	}
 
 	function nodeMouseClick(d) {
@@ -383,7 +437,7 @@ d3.json("dbClean.json", function (graph) {
 			d3.select(this).classed("hide", false);
 		}
 
-		info.html(generateCard(d) + accumHTML);
+		setCards(generateCard(d) + accumHTML);
 	}
 
 	// Clear any highlighted nodes or links.
@@ -392,8 +446,17 @@ d3.json("dbClean.json", function (graph) {
 		// info.text(defaultInfo);
 	}
 
+
+	d3.select("svg").call(d3.zoom()
+		.extent([
+			[0, 0],
+			[width, height]
+		])
+		.scaleExtent([-8, 8])
+		.on("zoom", zoomed));
+
 	function zoomed() {
-		svg.attr("transform", d3.event.transform);
+		zoomG.attr("transform", d3.event.transform);
 	}
 });
 
