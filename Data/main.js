@@ -67,7 +67,7 @@ svg = zoomG.append("g").attr("transform", "translate(" + outerRadius + "," + out
 
 
 // Load the data and display the plot!
-d3.json("dbClean.json", function (graph) {
+d3.json("dbDalenaClean.json", function (graph) {
 	nodes = []
 	for (const entry of Object.keys(graph)) {
 		temp = graph[entry];
@@ -375,7 +375,7 @@ d3.json("dbClean.json", function (graph) {
 
 
 	function isolateNodes(d, func) {
-		var accumHTML = ""
+		var accumHTML = "";
 
 		svg.selectAll(".node").classed("active", function (p) {
 			var flag = func(p, d);
@@ -389,7 +389,7 @@ d3.json("dbClean.json", function (graph) {
 			return !flag
 		});
 
-		return accumHTML
+		return accumHTML;
 	}
 
 
