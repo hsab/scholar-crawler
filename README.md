@@ -1,5 +1,5 @@
 # Scholar Crawler
-### Clustering and visualizing the interdisciplinarity of canonical literature based on the Louvain Modularity of citation relations and node-link dependency graphs
+### Clustering and visualizing publication interdisciplinarity using the Louvain Modularity of citation relations and node-link dependency graphs
 
 ![Teaser image](./assets/demo.png)
 
